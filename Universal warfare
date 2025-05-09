@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Space Universal Warfare</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #0f0;
+      font-family: monospace;
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #0ff;
+    }
+    .section {
+      border: 1px solid #0ff;
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #111;
+    }
+    button {
+      margin: 5px;
+      padding: 5px 10px;
+      border: 1px solid #0ff;
+      background: #222;
+      color: #0f0;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0ff;
+      color: #000;
+    }
+    input, select {
+      margin: 5px 0;
+      padding: 5px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Space Universal Warfare</h1>
+
+  <div class="section">
+    <h2>Welcome Commander</h2>
+    <input type="text" id="username" placeholder="Enter your commander name" />
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="game" style="display:none;">
+    <div class="section">
+      <h2>Base Overview</h2>
+      <p id="baseStats"></p>
+      <button onclick="buildStructure()">Build Structure</button>
+      <button onclick="explore()">Explore</button>
+    </div>
+
+    <div class="section">
+      <h2>Alliance</h2>
+      <button onclick="createAlliance()">Create Alliance</button>
+      <button onclick="joinAlliance()">Join Alliance</button>
+      <p id="allianceStatus"></p>
+    </div>
+
+    <div class="section">
+      <h2>Research & Tech Tree</h2>
+      <button onclick="startResearch()">Start Research</button>
+      <p id="techStatus"></p>
+    </div>
+
+    <div class="section">
+      <h2>Missions & Exploration</h2>
+      <button onclick="startMission()">Start Mission</button>
+      <p id="missionLog"></p>
+    </div>
+
+    <div class="section">
+      <h2>Galaxy</h2>
+      <p>[Galactic Map Placeholder]</p>
+      <p>[Trade | Diplomacy | Colonization | PvE | Artifacts | Events]</p>
+    </div>
+
+    <div class="section">
+      <h2>Social & Multiplayer</h2>
+      <button onclick="openChat()">Open Chat</button>
+      <p>[Leaderboard | Chat | Achievements | Voice | Avatars]</p>
+    </div>
+
+    <div class="section">
+      <h2>Advanced Features</h2>
+      <p>[Fleet Customization | Homeworlds | Espionage | AI Factions]</p>
+      <p>[Weather | Ruins | Interstellar Trade | Law | Mods]</p>
+      <p>[User Missions | Voting | Space Stations | News]</p>
+    </div>
+
+    <button onclick="saveGame()">Save Game</button>
+    <button onclick="loadGame()">Load Game</button>
+  </div>
+
+  <script>
+    let player = {
+      name: "",
+      baseLevel: 1,
+      alliance: null,
+      researchLevel: 0,
+      missionCount: 0,
+    };
+
+    function startGame() {
+      const name = document.getElementById("username").value.trim();
+      if (!name) return alert("Please enter a name!");
+      player.name = name;
+      document.getElementById("game").style.display = "block";
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById("baseStats").innerText =
+        `Commander: ${player.name} | Base Level: ${player.baseLevel}`;
+      document.getElementById("allianceStatus").innerText =
+        player.alliance ? `Member of ${player.alliance}` : "No alliance";
+      document.getElementById("techStatus").innerText =
+        `Research Level: ${player.researchLevel}`;
+      document.getElementById("missionLog").innerText =
+        `Missions completed: ${player.missionCount}`;
+    }
+
+    function buildStructure() {
+      player.baseLevel++;
+      updateUI();
+    }
+
+    function explore() {
+      alert("Exploring deep space...");
+    }
+
+    function createAlliance() {
+      const name = prompt("Enter alliance name:");
+      if (name) {
+        player.alliance = name;
+        updateUI();
+      }
+    }
+
+    function joinAlliance() {
+      const name = prompt("Enter alliance to join:");
+      if (name) {
+        player.alliance = name;
+        updateUI();
+      }
+    }
+
+    function startResearch() {
+      player.researchLevel++;
+      updateUI();
+    }
+
+    function startMission() {
+      player.missionCount++;
+      updateUI();
+    }
+
+    function saveGame() {
+      localStorage.setItem("suw_save", JSON.stringify(player));
+      alert("Game saved!");
+    }
+
+    function loadGame() {
+      const data = localStorage.getItem("suw_save");
+      if (data) {
+        player = JSON.parse(data);
+        document.getElementById("game").style.display = "block";
+        updateUI();
+        alert("Game loaded!");
+      } else {
+        alert("No save found.");
+      }
+    }
+
+    function openChat() {
+      alert("Opening galactic chat...");
+    }
+  </script>
+</body>
+</html>
