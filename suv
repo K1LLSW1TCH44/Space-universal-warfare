@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Space Universal Warfare</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background: radial-gradient(circle at top, #0b0f2a, #000);
+  color: #e0e6ff;
+  font-family: 'Orbitron', Arial, sans-serif;
+  text-align:center;
+  padding:10px;
+  transition: background 1s;
+}
+h1 {
+  color:#7aa2ff;
+  text-shadow: 0 0 8px #7aa2ff;
+  animation: glow 2s infinite alternate;
+}
+@keyframes glow { from { text-shadow:0 0 5px #7aa2ff;} to { text-shadow:0 0 20px #a0c4ff; } }
+
+.panel {
+  background: rgba(20,30,60,0.8);
+  margin:10px auto;
+  padding:10px;
+  border-radius:12px;
+  max-width:800px;
+  box-shadow: 0 0 15px rgba(50,100,255,0.5);
+  transition: all 0.3s;
+}
+.panel:hover { box-shadow: 0 0 25px rgba(80,150,255,0.7); }
+
+button {
+  background:#1a2a6c;
+  color:white;
+  border:none;
+  padding:6px 12px;
+  margin:3px;
+  border-radius:8px;
+  cursor:pointer;
+  transition: transform 0.2s, background 0.3s;
+}
+button:hover { background:#3b5bdb; transform: scale(1.05); }
+
+.small { font-size:12px; opacity:0.7; }
+
+.system {
+  cursor:pointer;
+  color:#a0d0ff;
+  transition: color 0.3s, transform 0.2s;
+}
+.system:hover { text-decoration:underline; color:#ffffff; transform: scale(1.05); }
+
+input {
+  padding:6px;
+  margin:3px;
+  border-radius:6px;
+  border:1px solid #444;
+  background:#111;
+  color:#fff;
+}
+
+.artifact { color:#ffcc00; font-weight:bold; animation: blink 1s infinite; }
+@keyframes blink { 0%,50%,100% {opacity:1;} 25%,75% {opacity:0.5;} }
+
+.log-entry {
+  opacity:0;
+  animation: fadein 0.5s forwards;
+}
+@keyframes fadein { from {opacity:0;} to {opacity:1;} }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+</head>
+
+<body>
+<h1>🚀 Space Universal Warfare</h1>
+<p class="small">v19 • Phase 7 • UI & Graphics Polish</p>
+
+<div class="panel" id="stats"></div>
+
+<div class="panel">
+  <button onclick="mine()">🪨 Mine</button>
+  <button onclick="buildFleet()">🚀 Build Fleet</button>
+  <button onclick="espionage()">🕵️ Espionage</button>
+  <button onclick="explore()">🌌 Explore</button>
+  <button onclick="seasonalEvent()">✨ Seasonal Event</button>
+  <button onclick="runTournament()">🏆 Tournament</button>
+</div>
+
+<div class="panel" id="diplomacy"></div>
+<div class="panel" id="council"></div>
+<div class="panel" id="wars"></div>
+<div class="panel" id="market"></div>
+<div class="panel" id="blackMarket"></div>
+<div class="panel" id="galaxyMap"></div>
+<div class="panel" id="fleets"></div>
+<div class="panel" id="quests"></div>
+<div class="panel" id="chat"></div>
+<div class="panel" id="log"></div>
+
+<input type="text" id="chatInput" placeholder="💬 Type message..." onkeydown="if(event.key==='Enter'){sendChat();}">
+<button onclick="sendChat()">Send</button>
+<button onclick="saveGame()">💾 Save</button>
+<button onclick="resetGame()">⚠ Reset</button>
+
+<script>
+/* ==================================
+   SPACE UNIVERSAL WARFARE v19
+   PHASE 7: UI & Graphics Polish
+================================== */
+
+const SAVE_KEY = "suw_save_v19";
+
+/* ---------- GAME STATE ---------- */
+let game = {
+  version:19,
+  playerFaction:"PLAYER",
+  inventory:{minerals:150,credits:450,artifacts:[]},
+  fleets:[],
+  assignedFleets:0,
+  factions:{},
+  wars:[],
+  council:{laws:[],proposal:null,cooldown:0},
+  market:{items:{minerals:{price:10},fleetUpgrades:{price:150}},blackMarket:{rareTech:{price:500,chance:0.25}}},
+  galaxy:[],
+  quests:[],
+  chat:[],
+  log:[],lastTick:Date.now()
+};
+
+/* ---------- FACTIONS ---------- */
+function initFactions(){if(Object.keys(game.factions).length) return;game.factions={PLAYER:{name:"Player Union",power:2,treaties:{ZENITH:"Alliance"}},ZENITH:{name:"Zenith Dominion",power:3,treaties:{PLAYER:"Alliance"}},ORION:{name:"Orion Syndicate",power:2,treaties:{PLAYER:"Neutral"}}};}
+
+/* ---------- GALAXY ---------- */
+function initGalaxy(){if(game.galaxy.length>0) return; const names=["Alpha","Beta","Gamma","Delta","Epsilon","Zeta","Orion","Nova","Sirius","Vega"]; names.forEach(n=>{game.galaxy.push({name:n+" System",owner:null,resources:{minerals:Math.floor(Math.random()*50+20),credits:Math.floor(Math.random()*200+50)},explored:false});});}
+
+/* ---------- FLEETS ---------- */
+function buildFleet(){if(game.inventory.credits<150) return alert("Not enough credits");game.inventory.credits-=150;game.fleets.push({name:"Fleet "+(game.fleets.length+1),weapons:1,shields:1,engines:1,formation:"Balanced",interior:{crewQuarters:1,labs:1,engineRoom:1,weaponsBay:1}}); log("New fleet constructed! 🚀"); updateUI();}
+function customizeFleet(idx,attr,value){const fleet=game.fleets[idx];if(fleet){fleet[attr]=value; log(`Fleet ${fleet.name} updated: ${attr}=${value}`); updateUI();}}
+function customizeInterior(idx,part,value){const fleet=game.fleets[idx];if(fleet){fleet.interior[part]=value; log(`Fleet ${fleet.name} interior ${part} upgraded to ${value}`); updateUI();}}
+
+/* ---------- EVENTS, QUESTS, EXPLORATION, MARKET ---------- */
+function seasonalEvent(){const events=["Meteor Storm! Colonies produce less minerals.","Galactic Festival! Market prices reduced for 5 ticks.","Alien Armada! Fleet attack power increased temporarily"]; const ev=events[Math.floor(Math.random()*events.length)]; log("Seasonal Event: "+ev); updateUI();}
+function startQuest(name,desc,completeFn){game.quests.push({name:name,desc:desc,complete:completeFn,done:false});log(`Quest started: ${name}`);updateUI();}
+function completeQuest(idx){if(game.quests[idx] && !game.quests[idx].done){game.quests[idx].done=true;game.quests[idx].complete();updateUI();}}
+function explore(){const unexplored=game.galaxy.filter(s=>!s.explored); if(unexplored.length===0){log("No unexplored systems remaining"); return;} const sys=unexplored[Math.floor(Math.random()*unexplored.length)]; sys.explored=true; log(`Explored ${sys.name}. 🌌`); if(Math.random()<0.2){game.inventory.artifacts.push("Artifact of "+sys.name); log(`Found legendary artifact in ${sys.name}! ⚜`);} if(Math.random()<0.1) startQuest("Alliance Mission","Cooperate with allies in "+sys.name,()=>{log("Alliance mission completed!");game.inventory.credits+=100;}); updateUI();}
+function colonizeSystem(idx){const system=game.galaxy[idx]; if(system.owner) return alert("Already colonized"); system.owner="PLAYER"; system.explored=true; game.inventory.minerals+=system.resources.minerals; game.inventory.credits+=system.resources.credits; log(`Colonized ${system.name} and collected initial resources! 🏠`); if(!game.quests.some(q=>q.name==="First Colony")) startQuest("First Colony","Establish your first colony",()=>{log("Quest completed: First Colony");}); updateUI();}
+function startWar(f1,f2){if(game.wars.some(w=>w.factions.includes(f1)&&w.factions.includes(f2))) return;game.wars.push({factions:[f1,f2],frontlines:3,playerParticipation:false});log(`War started between ${game.factions[f1].name} and ${game.factions[f2].name} ⚔`);}
+function joinWar(){const war=game.wars[0];if(!war||war.playerParticipation) return;if(game.fleets.length<=0) return alert("No fleets available"); game.fleets.pop(); game.assignedFleets++; war.playerParticipation=true;log("You joined the war temporarily. 🚀");}
+function buy(item){const price=game.market.items[item].price;if(game.inventory.credits<price) return alert("Not enough credits");game.inventory.credits-=price;game.inventory[item]=(game.inventory[item]||0)+1;log(`Bought 1 ${item} for ${price} credits 💳`);updateUI();}
+function sell(item){if(!game.inventory[item]||game.inventory[item]<=0) return alert("Nothing to sell");const price=game.market.items[item].price;game.inventory[item]--;game.inventory.credits+=price;log(`Sold 1 ${item} for ${price} credits 💳`);updateUI();}
+function buyBlackMarket(item){const entry=game.market.blackMarket[item];if(!entry) return;if(game.inventory.credits<entry.price) return alert("Not enough credits");if(Math.random()>entry.chance){log(`Black market purchase of ${item} failed! Reputation lost.`);updateUI();return;}game.inventory.credits-=entry.price;game.inventory[item]=(game.inventory[item]||0)+1;log(`Black market purchase successful: ${item} ⚠`);updateUI();}
+function espionage(){const target=["ZENITH","ORION"][Math.floor(Math.random()*2)];if(Math.random()<0.3){log(`Espionage on ${game.factions[target].name} succeeded! 🕵️`);}else{log(`Espionage on ${game.factions[target].name} failed! ❌`);}updateUI();}
+
+/* ---------- CHAT ---------- */
+function sendChat(){const msg=document.getElementById("chatInput").value.trim(); if(!msg) return; game.chat.push({player:"PLAYER",message:msg}); document.getElementById("chatInput").value=""; log(`You: ${msg} 💬`); updateUI();}
+
+/* ---------- AI & Tournaments ---------- */
+function aiActions(){Object.keys(game.factions).forEach(f=>{if(f==="PLAYER") return; const faction=game.factions[f]; if(Math.random()<0.1){const uncolonized=game.galaxy.filter(s=>!s.owner); if(uncolonized.length>0){const sys=uncolonized[Math.floor(Math.random()*uncolonized.length)]; sys.owner=f; log(`${faction.name} colonized ${sys.name} 🌌`);}} if(Math.random()<0.05){const target=Object.keys(game.factions).filter(x=>x!==f && x!=="PLAYER")[Math.floor(Math.random()*1)]; if(target) startWar(f,target);} if(Math.random()<0.1){const unexplored=game.galaxy.filter(s=>!s.explored); if(unexplored.length>0){const sys=unexplored[Math.floor(Math.random()*unexplored.length)]; sys.explored=true; log(`${faction.name} explored ${sys.name} 🌌`);}} if(Math.random()<0.05){const crime=Math.random()<0.5?"Black Market Trading":"Espionage"; log(`${faction.name} law enforcement caught a crime: ${crime} ⚖`);}});}
+function runTournament(){if(game.fleets.length===0) return alert("No fleets to participate"); const winner=Math.random()<0.5?"PLAYER":"AI"; if(winner==="PLAYER"){log("You won the tournament! Rewards: 100 credits, 1 artifact 🏆"); game.inventory.credits+=100; game.inventory.artifacts.push("Tournament Artifact");} else log("AI faction won the tournament."); updateUI();}
+
+/* ---------- HYBRID TICK ---------- */
+function hybridTick(){aiActions(); game.wars.forEach(war=>{war.frontlines-=1;if(war.frontlines<=0){log(`War ended between ${game.factions[war.factions[0]].name} and ${game.factions[war.factions[1]].name} ⚔`);if(war.playerParticipation) game.assignedFleets=0;game.wars=game.wars.filter(x=>x!==war);}}); Object.keys(game.market.items).forEach(i=>{if(Math.random()<0.1){const change=Math.floor(Math.random()*5-2); game.market.items[i].price=Math.max(1,game.market.items[i].price+change);}}); updateUI();}
+
+/* ---------- UI ---------- */
+function updateUI(){
+  document.getElementById("stats").innerHTML=`💳 Credits: ${game.inventory.credits}<br>🪨 Minerals: ${game.inventory.minerals}<br>🚀 Fleets: ${game.fleets.length} (Assigned: ${game.assignedFleets})<br>Artifacts: ${game.inventory.artifacts.map(a=>'<span class="artifact">'+a+'</span>').join(", ")||"None"}`;
+  
+  let dip="<b>🤝 Diplomacy</b><br>";Object.keys(game.factions).forEach(id=>{if(id==="PLAYER") return;dip+=`<hr><b>${game.factions[id].name}</b><br>Treaty: ${game.factions.PLAYER.treaties[id]}`;});document.getElementById("diplomacy").innerHTML=dip;
+  
+  let c=`<b>🏛 Galactic Council</b><br>Active Laws: ${game.council.laws.join(", ")||"None"}`;document.getElementById("council").innerHTML=c;
+  
+  let w=`<b>⚔ Wars</b><br>`;if(!game.wars.length) w+="No active wars";else game.wars.forEach((war,i)=>{w+=`<hr>${game.factions[war.factions[0]].name} vs ${game.factions[war.factions[1]].name}<br>Frontlines: ${war.frontlines}<br><button onclick="joinWar()">Join War</button>`});document.getElementById("wars").innerHTML=w;
+  
+  let m=`<b>💹 Market</b><br>`;Object.keys(game.market.items).forEach(i=>{m+=`${i} - ${game.market.items[i].price} credits <button onclick="buy('${i}')">Buy</button> <button onclick="sell('${i}')">Sell</button><br>`});document.getElementById("market").innerHTML=m;
+  
+  let bm=`<b>🕵️ Black Market</b><br>`;Object.keys(game.market.blackMarket).forEach(i=>{bm+=`${i} - ${game.market.blackMarket[i].price} credits <button onclick="buyBlackMarket('${i}')">Buy</button><br>`});document.getElementById("blackMarket").innerHTML=bm;
+  
+  let map=`<b>🗺 Galactic Map</b><br>`;game.galaxy.forEach((sys,idx)=>{map+=`<span class="system" onclick="colonizeSystem(${idx})">${sys.name}</span> - Owner: ${sys.owner||"Uncolonized"}<br>`});document.getElementById("galaxyMap").innerHTML=map;
+  
+  let fleetsUI=`<b>🚀 Fleets</b><br>`;game.fleets.forEach((f,i)=>{fleetsUI+=`<hr>${f.name}: W${f.weapons} S${f.shields} E${f.engines} Formation:${f.formation} Interior:${JSON.stringify(f.interior)} <button onclick="customizeFleet(${i},'weapons',f.weapons+1)">+W</button> <button onclick="customizeFleet(${i},'shields',f.shields+1)">+S</button> <button onclick="customizeFleet(${i},'engines',f.engines+1)">+E</button>`});document.getElementById("fleets").innerHTML=fleetsUI;
+  
+  let q=`<b>📜 Active Quests</b><br>`;game.quests.forEach((quest,idx)=>{q+=`${quest.name} - ${quest.desc} ${quest.done?"✅":"<button onclick='completeQuest("+idx+")'>Complete</button>"}<br>`});document.getElementById("quests").innerHTML=q;
+  
+  let chatUI=`<b>💬 Galactic Chat</b><br>`;game.chat.slice(-10).forEach(msg=>{chatUI+=`${msg.player}: ${msg.message}<br>`});document.getElementById("chat").innerHTML=chatUI;
+  
+  document.getElementById("log").innerHTML=`<b>Galactic Log</b><br>`+game.log.map(e=>`<div class="log-entry">${e}</div>`).join("");
+}
+
+/* ---------- LOG ---------- */
+function log(msg){game.log.unshift("• "+msg);if(game.log.length>30) game.log.pop();}
+
+/* ---------- SAVE / RESET ---------- */
+function saveGame(){game.lastTick=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(game));alert("Game saved 💾");}
+function resetGame(){if(!confirm("Reset everything?")) return; localStorage.removeItem(SAVE_KEY);
